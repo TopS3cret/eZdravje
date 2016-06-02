@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>eZdravje :: 4. DN :: OIS 2015/2016</title>
   <link href="knjiznice/css/bootstrap.min.css" rel="stylesheet">
+  <link href="knjiznice/css/style.css" rel="stylesheet">
   <style>
     body {padding-top: 70px;}
   </style>
@@ -22,14 +23,14 @@
           <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
         </button>
         <!-- ZAČETEK: Ime vaše aplikacije -->
-        <a class="navbar-brand" href="index.html">{ime vaše aplikacije}</a>
+        <a class="navbar-brand" href="index.html">KoBomVelik</a>
         <!-- KONEC: Ime vaše aplikacije -->
       </div>
       <div class="collapse navbar-collapse" id="menujska-vrstica">
         <ul class="nav navbar-nav">
           <li><a href="opis.html">Opis ideje</a></li>
           <li><a href="nacrt.html">Načrt informacijske rešitve</a></li>
-          <li><a href="#">Generiranje podatkov</a></li>
+          <li><a href="#" class="generate-data">Generiranje podatkov</a></li>
         </ul>
       </div>
     </div>
@@ -40,7 +41,37 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-12 text-center">
-        <p class="lead"><strong>TO-DO</strong>: Na tem mestu implementirajte vašo aplikacijo.</p>
+        <div class="input-group">
+          <select id="uporabniki-dropdown" class="form-control">
+            <option value="d58a5865-57c3-4c06-8455-f6473c884c08">Matej Žalec (d58a5865-57c3-4c06-8455-f6473c884c08)</option>
+            <option value="16260b0f-854c-476f-ba2c-0e2888e61696">Job Rožanec (16260b0f-854c-476f-ba2c-0e2888e61696)</option>
+            <option value="bf1fc3f3-da81-4eb9-a680-940410c6a486">Lori Bregar (bf1fc3f3-da81-4eb9-a680-940410c6a486)</option>
+          </select>
+          <div class="input-group-btn">
+            <button type="button" class="btn btn-primary">Izberi</button>
+            <button type="button" class="btn btn-default generate-data">Generiraj</button>
+            <!-- Button and dropdown menu -->
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="col-md-8">
+        <div class="card first-row clearfix">
+          <div class="col-md-4">
+            <img src="images/profile.png" alt="Profilna slika" class="img-circle img-responsive" style="height:140px">
+          </div>
+          <div class="col-md-8">
+            <h2>Ime Priimek</h2>
+            <h3><span>15 let</span> <span class="text-muted">Ž</span></h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card first-row clearfix">
+          <p>Začasni content</p>
+        </div>
       </div>
     </div>
   </div>
