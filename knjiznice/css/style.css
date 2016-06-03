@@ -15,3 +15,23 @@ body{
 .row {
     margin-top: 10px;
 }
+
+#itm-meter {
+    max-height: 160px;
+    text-align: center;
+}
+#itm-meter g.arc {
+	fill: steelblue;
+}
+
+#itm-meter g.pointer {
+	fill: #e85116;
+	
+}
+
+#itm-meter g.label text {
+	text-anchor: middle;
+	font-size: 14px;
+	font-weight: bold;
+	fill: #666;
+}
