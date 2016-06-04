@@ -5,15 +5,18 @@
   <title>eZdravje :: 4. DN :: OIS 2015/2016</title>
   <link href="knjiznice/css/bootstrap.min.css" rel="stylesheet">
   <link href="knjiznice/css/xcharts.min.css" rel="stylesheet">
+  <link href="knjiznice/fancybox/jquery.fancybox.css" rel="stylesheet">
   <link href="knjiznice/css/style.css" rel="stylesheet">
   <style>
     body {padding-top: 70px;}
   </style>
+  <script src="knjiznice/js/async.min.js"></script>
   <script src="knjiznice/js/jquery-2.2.3.min.js"></script>
   <script src="knjiznice/js/bootstrap.min.js"></script>
   <script src="knjiznice/js/d3.min.js"></script>
   <script src="knjiznice/js/xcharts.min.js"></script>
   <script src="knjiznice/js/gauge.js"></script>
+  <script src="knjiznice/fancybox/jquery.fancybox.js"></script>
   <script src="knjiznice/js/koda.js"></script>
 </head>
 <body>
@@ -140,6 +143,8 @@
               <div id="tab-visina" class="tab-pane fade in active"><figure style="width: 100%; height: 300px;" id="visina-graf"></figure></div>
               <div id="tab-teza" class="tab-pane fade"><figure style="width: 100%; height: 300px;" id="teza-graf"></figure></div>
             </div>
+            <div><small>Rumena črta prikazuje povprečno (zdravo) vrednost za določeno starost. O prevelikih odstopanjih se posvetujte z zdravnikom.</small></div>
+            <div><small class="text-muted">Vir podatkov: Centers for Disease Control and Prevention</small></div>
           </div>
         </div>
       </div>
@@ -174,8 +179,9 @@
       <div class="col-md-8">
         <div class="card clearfix">
           <h2>Predlogi za hrano</h2>
-          <div id="food-gallery">
+          <div class="clearfix" id="food-gallery">
           </div>
+          <div style="margin-top:20px"><small class="text-muted">Vir podatkov: Flickr API</small></div>
         </div>
       </div>
     </div>

@@ -72,3 +72,15 @@ body{
     background-color: #E2DFDA;
     width: 100%;
 }
+
+.xchart .comp .line{
+    stroke-width: 2px;
+}
+
+.xchart .fill {
+  display: none;
+}
+
+.xchart .color0.comp .line{
+    stroke: #FFDD00;
+}

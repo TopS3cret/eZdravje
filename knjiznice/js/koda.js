@@ -101,14 +101,15 @@ var uporabniki =  [
  * enolične ID številke za dostop do funkcionalnosti
  * @return enolični identifikator seje za dostop do funkcionalnosti
  */
-function getSessionId() {
+function getSessionId(callback) {
     var response = $.ajax({
         type: "POST",
         url: baseUrl + "/session?username=" + encodeURIComponent(username) +
                 "&password=" + encodeURIComponent(password),
-        async: false
+        success: function(response){
+            callback(response.sessionId);
+        }
     });
-    return response.responseJSON.sessionId;
 }
 
 
@@ -120,132 +121,137 @@ function getSessionId() {
  * @param stPacienta zaporedna številka pacienta (1, 2 ali 3)
  * @return ehrId generiranega pacienta
  */
-function generirajPodatke(stPacienta) {
+function generirajPodatke(stPacienta, callback) {
     
-    var sessionId = getSessionId();
-    
-    var uporabnik = uporabniki[stPacienta-1];
-
-	$.ajaxSetup({
-	    headers: {"Ehr-Session": sessionId}
-	});
-	
-	// Dodamo pacienta v bazo
-	var req = $.ajax({
-	    url: baseUrl + "/ehr",
-	    type: 'POST',
-	    async: false
-	});
-	
-	var ehrId = req.responseJSON.ehrId;
-
-    var partyData = {
-        firstNames: uporabnik.ime,
-        lastNames: uporabnik.priimek,
-        dateOfBirth: uporabnik.datumRojstva,
-        gender: uporabnik.spol,
-        partyAdditionalInfo: [{key: "ehrId", value: ehrId}]
-    };
-    $.ajax({
-        url: baseUrl + "/demographics/party",
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(partyData),
-        success: function (party) {
-            // TODO: Log success
-            //console.log(party);
-        },
-        error: function(err) {
-            // TODO: Log error
-        	console.log(err);
-        }
+    getSessionId(function(sessionId){
+        var uporabnik = uporabniki[stPacienta-1];
+    	
+    	// Dodamo pacienta v bazo
+    	var req = $.ajax({
+    	    url: baseUrl + "/ehr",
+    	    type: 'POST',
+    	    headers: {"Ehr-Session": sessionId},
+    	    success:function(data){
+    	        var ehrId = data.ehrId;
+    	        
+    	        var partyData = {
+                    firstNames: uporabnik.ime,
+                    lastNames: uporabnik.priimek,
+                    dateOfBirth: uporabnik.datumRojstva,
+                    gender: uporabnik.spol,
+                    partyAdditionalInfo: [{key: "ehrId", value: ehrId}]
+                };
+                
+                $.ajax({
+                    url: baseUrl + "/demographics/party",
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(partyData),
+                    headers: {"Ehr-Session": sessionId},
+                    success: function (party) {
+                        // TODO: Log success
+                        //console.log(party);
+                        // Dodamo meritve
+                    	async.eachSeries(uporabnik.meritve, function(meritev, callback){
+                    	    var podatki = {
+                        	    "ctx/language": "en",
+                        	    "ctx/territory": "SI",
+                        	    "ctx/time": meritev.datum,
+                        	    "vital_signs/height_length/any_event/body_height_length": meritev.visina,
+                        	    "vital_signs/body_weight/any_event/body_weight": meritev.teza
+                        	};
+                        	var parametriZahteve = {
+                        	    ehrId: ehrId,
+                        	    templateId: 'Vital Signs',
+                        	    format: 'FLAT',
+                        	    committer: meritev.izvajalec
+                        	};
+                        	$.ajax({
+                        	    url: baseUrl + "/composition?" + $.param(parametriZahteve),
+                        	    type: 'POST',
+                        	    contentType: 'application/json',
+                        	    data: JSON.stringify(podatki),
+                        	    headers: {"Ehr-Session": sessionId},
+                        	    success: function (party) {
+                                    // TODO: Log success
+                                    // console.log(party);
+                                    callback();
+                                },
+                                error: function(err) {
+                                    // TODO: Log error
+                                	console.log(err);
+                                }
+                        	});
+                    	});
+                    },
+                    error: function(err) {
+                        // TODO: Log error
+                    	console.log(err);
+                    }
+                });
+            
+                callback(ehrId);
+    	    }
+    	});
+    	
     });
     
-	// Dodamo meritve
-	for(var i=0; i<uporabnik.meritve.length; i++){
-	    var meritev = uporabnik.meritve[i];
-    	var podatki = {
-    		// Struktura predloge je na voljo na naslednjem spletnem naslovu:
-            // https://rest.ehrscape.com/rest/v1/template/Vital%20Signs/example
-    	    "ctx/language": "en",
-    	    "ctx/territory": "SI",
-    	    "ctx/time": meritev.datum,
-    	    "vital_signs/height_length/any_event/body_height_length": meritev.visina,
-    	    "vital_signs/body_weight/any_event/body_weight": meritev.teza
-    	   	//"vital_signs/body_temperature/any_event/temperature|magnitude": telesnaTemperatura,
-    	    //"vital_signs/body_temperature/any_event/temperature|unit": "°C",
-    	};
-    	var parametriZahteve = {
-    	    ehrId: ehrId,
-    	    templateId: 'Vital Signs',
-    	    format: 'FLAT',
-    	    committer: meritev.izvajalec
-    	};
-    	$.ajax({
-    	    url: baseUrl + "/composition?" + $.param(parametriZahteve),
-    	    type: 'POST',
-    	    contentType: 'application/json',
-    	    data: JSON.stringify(podatki),
-    	    success: function (party) {
-                // TODO: Log success
-                // console.log(party);
-            },
-            error: function(err) {
-                // TODO: Log error
-            	console.log(err);
-            },
-            async: false
-    	});
-	}
-
-    // TODO: Potrebno implementirati
-
-    return ehrId;
 }
 
 function generirajNove(){
     var dropDown = document.getElementById("uporabniki-dropdown");
     dropDown.innerHTML = "";
-    for(var i=1; i<=3; i++){
+    var a = [1,2,3];
+    async.eachSeries(a,function(i,callback){
         var opt = document.createElement("option");
         var up = uporabniki[i-1];
-        var ehrId = generirajPodatke(i);
-        opt.value= ehrId;
-        opt.innerHTML = up.ime + " " + up.priimek + " ("+ehrId+")";
+        generirajPodatke(i, function(ehrId){
+            opt.value= ehrId;
+            opt.innerHTML = up.ime + " " + up.priimek + " ("+ehrId+")";
+    
+            dropDown.appendChild(opt);
+            callback();
+        });
+        
+    });
 
-        dropDown.appendChild(opt);
-    }
+        
 }
 
 
-function preberiOsvnovnePodatkeUporabnika(ehrId) {
-	var sessionId = getSessionId();
-
-	$.ajax({
-		url: baseUrl + "/demographics/ehr/" + ehrId + "/party",
-		type: 'GET',
-		headers: {"Ehr-Session": sessionId},
-    	success: function (data) {
-			var party = data.party;
-			uporabnik.ime = party.firstNames;
-			uporabnik.priimek = party.lastNames;
-			uporabnik.datumRojstva = new Date(party.dateOfBirth);
-			uporabnik.spol = party.gender=="MALE"?"m":"f";
-			
-			$("#uporabnik-ime").text(party.firstNames + " " + party.lastNames);
-			$("#uporabnik-starost").text(izracunajStarost(party.dateOfBirth) + " let");
-			$("#uporabnik-datum-rojstva").text(d3.time.format("(%x)")(new Date(party.dateOfBirth)));
-			$("#uporabnik-spol").text(party.gender=="MALE"?"M":"Ž");
-			if(party.gender=="MALE")
-			    $("#uporabnik-spol").removeClass("spol-f").addClass("spol-m");
-			else
-			    $("#uporabnik-spol").removeClass("spol-m").addClass("spol-f");
-			// console.log(party);
-		},
-		error: function(err) {
-			// TODO: Izpis napake
-		}
+function preberiOsvnovnePodatkeUporabnika(ehrId, callback) {
+	
+	
+	getSessionId(function(sessionId){
+	    $.ajax({
+    		url: baseUrl + "/demographics/ehr/" + ehrId + "/party",
+    		type: 'GET',
+    		headers: {"Ehr-Session": sessionId},
+        	success: function (data) {
+    			var party = data.party;
+    			uporabnik.ime = party.firstNames;
+    			uporabnik.priimek = party.lastNames;
+    			uporabnik.datumRojstva = new Date(party.dateOfBirth);
+    			uporabnik.spol = party.gender=="MALE"?"m":"f";
+    			
+    			$("#uporabnik-ime").text(party.firstNames + " " + party.lastNames);
+    			$("#uporabnik-starost").text(izracunajStarost(party.dateOfBirth) + " let");
+    			$("#uporabnik-datum-rojstva").text(d3.time.format("(%x)")(new Date(party.dateOfBirth)));
+    			$("#uporabnik-spol").text(party.gender=="MALE"?"M":"Ž");
+    			if(party.gender=="MALE")
+    			    $("#uporabnik-spol").removeClass("spol-f").addClass("spol-m");
+    			else
+    			    $("#uporabnik-spol").removeClass("spol-m").addClass("spol-f");
+    			// console.log(party);
+    			
+    			callback();
+    		},
+    		error: function(err) {
+    			// TODO: Izpis napake
+    		}
+    	});
 	});
+	
 }
 
 function izracunajStarost(datumRojstva){
@@ -263,97 +269,206 @@ function izracunajStarost(datumRojstva){
 }
 
 function preberiVisineInTezeUporabnika(ehrId){
-    var sessionId = getSessionId();
-    $.when($.ajax({
-  	    url: baseUrl + "/view/" + ehrId + "/" + "height",
-	    type: 'GET',
-	    headers: {"Ehr-Session": sessionId},
-	    }), 
-	    $.ajax({
-  	    url: baseUrl + "/view/" + ehrId + "/" + "weight",
-	    type: 'GET',
-	    headers: {"Ehr-Session": sessionId},
-	    })
-	).done(function(a,b){
-	    var visine = a[0];
-	    var teze = b[0];
-	    
-	    var meritve = zdruziVisineInTeze(visine, teze);
-	    
-	    var visinaGraphData = {
-          "xScale": "time",
-          "yScale": "linear",
-          "type": "line-dotted",
-          "main": [
-            {
-              "className": ".graf-data-primary",
-              "data": [
+    getSessionId(function(sessionId){
+        $.when($.ajax({
+      	    url: baseUrl + "/view/" + ehrId + "/" + "height",
+    	    type: 'GET',
+    	    headers: {"Ehr-Session": sessionId},
+    	    }), 
+    	    $.ajax({
+      	    url: baseUrl + "/view/" + ehrId + "/" + "weight",
+    	    type: 'GET',
+    	    headers: {"Ehr-Session": sessionId},
+    	    })
+    	).done(function(a,b){
+    	    var visine = a[0];
+    	    var teze = b[0];
+    	    
+    	    var meritve = zdruziVisineInTeze(visine, teze);
+    	    
+    	    napolniTabelo(meritve);
+    	    narisiGrafe(meritve);
+    	    
+    	    // ITM meter
+    	    for(var i=0; i<meritve.length; i++){
+    	        var m = meritve[i];
+    	        if(m.visina != undefined && m.teza != undefined){
+    	            var itm = m.teza.weight/((m.visina.height/100)*(m.visina.height/100));
+        	        itmMeter.update(itm);
+        	        loadGallery(itm);
+        	        break;
+    	        }
+    	    }
+    	});
+    });
+    
+}
 
-              ]
-            }
-          ],
-        }
+function napolniTabelo(meritve){
+    var tabela = document.getElementById("meritve-tabela");
+    tabela.innerHTML = "";
+    for(var i=0; i<meritve.length; i++){
+        var m = meritve[i];
         
-        var tezaGraphData = {
-          "xScale": "time",
-          "yScale": "linear",
-          "type": "line-dotted",
-          "main": [
-            {
-              "className": ".graf-data-primary",
-              "data": [
+        var trElm = document.createElement('tr');
 
-              ]
-            }
-          ],
+        var datumTd = document.createElement('td');
+        var datumText = document.createTextNode(d3.time.format("%e.%-m.%Y %H:%M")(new Date(m.datum)));
+        datumTd.appendChild(datumText);
+
+        var visinaTd = document.createElement('td');
+        var visinaText = document.createTextNode(m.visina.height + " " + m.visina.unit);
+        visinaTd.appendChild(visinaText);
+        
+        var tezaTd = document.createElement('td');
+        var tezaText = document.createTextNode(m.teza.weight + " " + m.teza.unit);
+        tezaTd.appendChild(tezaText);
+        
+        trElm.appendChild(datumTd); 
+        trElm.appendChild(visinaTd);
+        trElm.appendChild(tezaTd);
+
+        tabela.appendChild(trElm);
+    }
+}
+
+function narisiGrafe(meritve){
+    
+    var visinaGraphData = {
+      "xScale": "time",
+      "yScale": "linear",
+      "type": "line-dotted",
+      "main": [
+        {
+          "className": ".graf-data-primary",
+          "data": [
+    
+          ]
         }
-	    
-	    var tabela = document.getElementById("meritve-tabela");
-	    tabela.innerHTML = "";
-	    for(var i=0; i<meritve.length; i++){
+      ],
+      "comp": [
+          {
+              "className": ".graph-median",
+              "type": "line",
+              "data" : [
+            
+                ]
+          }
+        ]
+    }
+    
+    var tezaGraphData = {
+      "xScale": "time",
+      "yScale": "linear",
+      "type": "line-dotted",
+      "main": [
+        {
+          "className": ".graf-data-primary",
+          "data": [
+    
+          ]
+        }
+      ],
+      "comp": [
+          {
+              "className": ".graph-median",
+              "type": "line",
+              "data" : [
+            
+                ]
+          }
+        ]
+    }
+    
+    pridobiPodatkePovprecja(meritve, function(stat){
+        for(var i=0; i<meritve.length; i++){
             var m = meritve[i];
             
-            var visinaPoint = {x:meritve[i].datum, y:meritve[i].visina.height};
+            var visinaPoint = {x:m.datum, y:m.visina.height};
             visinaGraphData.main[0].data.push(visinaPoint);
             
-            var tezaPoint = {x:meritve[i].datum, y:meritve[i].teza.weight};
+            var tezaPoint = {x:m.datum, y:m.teza.weight};
             tezaGraphData.main[0].data.push(tezaPoint);
+        }
+        for(var i=0; i<stat.visina.length; i++){
+            var s = stat.visina[i];
             
-            var trElm = document.createElement('tr');
-    
-            var datumTd = document.createElement('td');
-            var datumText = document.createTextNode(d3.time.format("%e.%-m.%Y %H:%M")(new Date(m.datum)));
-            datumTd.appendChild(datumText);
-    
-            var visinaTd = document.createElement('td');
-            var visinaText = document.createTextNode(m.visina.height + " " + m.visina.unit);
-            visinaTd.appendChild(visinaText);
+            var datum = uporabnik.datumRojstva.getTime() + s.ageMonths*30*24*60*60*1000;
+            var visinaPoint = {x:new Date(datum), y:s.M};
+            visinaGraphData.comp[0].data.push(visinaPoint);
+        }
+        
+        for(var i=0; i<stat.teza.length; i++){
+            var s = stat.teza[i];
             
-            var tezaTd = document.createElement('td');
-            var tezaText = document.createTextNode(m.teza.weight + " " + m.teza.unit);
-            tezaTd.appendChild(tezaText);
-            
-            trElm.appendChild(datumTd); 
-            trElm.appendChild(visinaTd);
-            trElm.appendChild(tezaTd);
+            var datum = uporabnik.datumRojstva.getTime() + s.ageMonths*30*24*60*60*1000;
+            var tezaPoint = {x:new Date(datum), y:s.M};
+            tezaGraphData.comp[0].data.push(tezaPoint);
+        }
+        
+        var visinaGraph = new xChart('line', visinaGraphData, '#visina-graf', getGraphOptions("cm"));
+        var tezaGraph = new xChart('line', tezaGraphData, '#teza-graf', getGraphOptions("kg"));
+    });
+    	    
     
-            tabela.appendChild(trElm);
-	    }
-	    
-	    var visinaGraph = new xChart('line', visinaGraphData, '#visina-graf', getGraphOptions("cm"));
-	    var tezaGraph = new xChart('line', tezaGraphData, '#teza-graf', getGraphOptions("kg"));
-	    
-	    // ITM meter
-	    for(var i=0; i<meritve.length; i++){
-	        var m = meritve[i];
-	        if(m.visina != undefined && m.teza != undefined){
-	            var itm = m.teza.weight/((m.visina.height/100)*(m.visina.height/100));
-    	        itmMeter.update(itm);
-    	        loadGallery(itm);
-    	        break;
-	        }
-	    }
-	});
+}
+
+function pridobiPodatkePovprecja(meritve, callback){
+    
+    $.when($.ajax("data/wtage.json"), $.ajax("data/statage.json")).done(function(a,b){
+        var wtage = uporabnik.spol=="m"?a[0].male : a[0].female;
+        var statage = uporabnik.spol=="m"?b[0].male : b[0].female;
+        
+        var zadnjaMeritev = new Date(meritve[0].datum);
+        var prvaMeritev = new Date(meritve[meritve.length-1].datum);
+        var ageMonthsStart = (prvaMeritev.getTime() - uporabnik.datumRojstva.getTime())/(1000*60*60*24*30);
+        var ageMonthsEnd = (zadnjaMeritev.getTime() - uporabnik.datumRojstva.getTime())/(1000*60*60*24*30);
+        
+        var iStartW = -1;
+        var iStartH = -1;
+        var iEndW = -1;
+        var iEndH = -1;
+        
+        for(var j=0; j<wtage.length; j++){
+            var w = wtage[j];
+            if(iStartW==-1 && w.ageMonths > ageMonthsStart){
+                if(j!=0 && Math.abs(wtage[j-1].ageMonths-ageMonthsStart)<Math.abs(w.ageMonths-ageMonthsStart))
+                    iStartW = j-1;
+                else
+                    iStartW = j;
+            }
+            
+            if(iEndW==-1 && w.ageMonths > ageMonthsEnd){
+                if(j!=0 && Math.abs(wtage[j-1].ageMonths-ageMonthsEnd)<Math.abs(w.ageMonths-ageMonthsEnd))
+                    iEndW = j-1;
+                else
+                    iEndW = j;
+            }
+        }
+        
+        for(var j=0; j<statage.length; j++){
+            var h = statage[j];
+            if(iStartH==-1 && h.ageMonths > ageMonthsStart){
+                if(j!=0 && Math.abs(statage[j-1].ageMonths-ageMonthsStart)<Math.abs(h.ageMonths-ageMonthsStart))
+                    iStartH = j-1;
+                else
+                    iStartH = j;
+            }
+            
+            if(iEndH==-1 && h.ageMonths > ageMonthsEnd){
+                if(j!=0 && Math.abs(statage[j-1].ageMonths-ageMonthsEnd)<Math.abs(h.ageMonths-ageMonthsEnd))
+                    iEndH = j-1;
+                else
+                    iEndH = j;
+            }
+        }
+    
+        var stat = {
+            teza: wtage.slice(iStartW,iEndW+2),
+            visina: statage.slice(iStartH,iEndH+2)
+        }
+        callback(stat);
+    })
 }
 
 function getGraphOptions(enota){
@@ -430,13 +545,22 @@ function loadGallery(itm){
 	            var div = document.createElement("div");
 	            $(div).addClass("col-md-3");
 	            
+	            
+	            var a = document.createElement("a");
+	            $(a).addClass("fancybox");
+	            a.setAttribute("href", "https://farm"+ photo.farm +".staticflickr.com/"+ photo.server +"/"+photo.id+"_"+photo.secret+".jpg");
+	            a.setAttribute("rel", "food");
+	            
 	            var img = document.createElement("img");
 	            $(img).addClass("img-responsive");
 	            img.setAttribute("src", src);
-	            
-	            div.appendChild(img);
+
+	            a.appendChild(img);
+	            div.appendChild(a);
 	            gallery.appendChild(div);
 	        } 
+	        
+	        $(".fancybox").fancybox();
 	    },
 	    error: function(e){
 	        console.log(e);
@@ -447,8 +571,10 @@ function loadGallery(itm){
 function izberiUporabnika(){
     var ehrId = $("#uporabniki-dropdown").val();
     uporabnik.ehrId = ehrId;
-    preberiOsvnovnePodatkeUporabnika(ehrId);
-    preberiVisineInTezeUporabnika(ehrId);
+    preberiOsvnovnePodatkeUporabnika(ehrId, function(){
+        preberiVisineInTezeUporabnika(ehrId);
+    });
+    
 }
 
 function dodajMeritev(){
@@ -478,23 +604,23 @@ function dodajMeritev(){
     	    format: 'FLAT'
     	};
     	
-    	var sessionId = getSessionId();
-
-    	$.ajax({
-    	    url: baseUrl + "/composition?" + $.param(parametriZahteve),
-    	    headers: {"Ehr-Session": sessionId},
-    	    type: 'POST',
-    	    contentType: 'application/json',
-    	    data: JSON.stringify(podatki),
-    	    success: function (party) {
-                // TODO: Log success
-                // console.log(party);
-                preberiVisineInTezeUporabnika(uporabnik.ehrId);
-            },
-            error: function(err) {
-                // TODO: Log error
-            	console.log(err);
-            }
+    	getSessionId(function(sessionId){
+    	    $.ajax({
+        	    url: baseUrl + "/composition?" + $.param(parametriZahteve),
+        	    headers: {"Ehr-Session": sessionId},
+        	    type: 'POST',
+        	    contentType: 'application/json',
+        	    data: JSON.stringify(podatki),
+        	    success: function (party) {
+                    // TODO: Log success
+                    // console.log(party);
+                    preberiVisineInTezeUporabnika(uporabnik.ehrId);
+                },
+                error: function(err) {
+                    // TODO: Log error
+                	console.log(err);
+                }
+        	});
     	});
         
     }
