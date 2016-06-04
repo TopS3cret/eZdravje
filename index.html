@@ -47,17 +47,25 @@
   <!-- ZAČETEK: Vsebina aplikacije -->
   <div class="container">
     <div class="row">
-      <div class="col-lg-12 text-center">
+      <div class="col-lg-4 text-center">
         <div class="input-group">
-          <select id="uporabniki-dropdown" class="form-control">
-            <option value="81c75f44-d564-4262-b8d1-df13a53d5bfc">Matej Žalec (81c75f44-d564-4262-b8d1-df13a53d5bfc)</option>
-            <option value="48b4f540-d33a-41ac-9750-80eb9484384b">Job Rožanec (48b4f540-d33a-41ac-9750-80eb9484384b)</option>
-            <option value="9addec75-e1c6-4042-aba0-f8e91a2fa70e">Lori Bregar (9addec75-e1c6-4042-aba0-f8e91a2fa70e)</option>
-          </select>
+          
           <div class="input-group-btn">
-            <button type="button" id="btn-select-user" class="btn btn-primary">Izberi</button>
-            <button type="button" class="btn btn-default generate-data">Generiraj</button>
-            <!-- Button and dropdown menu -->
+            <button type="button" class="btn btn-default generate-data">Generiraj podatke</button>
+          </div>
+          <select id="uporabniki-dropdown" class="form-control">
+            <option value="81c75f44-d564-4262-b8d1-df13a53d5bfc">Matej Žalec</option>
+            <option value="48b4f540-d33a-41ac-9750-80eb9484384b">Job Rožanec</option>
+            <option value="9addec75-e1c6-4042-aba0-f8e91a2fa70e">Lori Bregar</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-lg-8 text-center">
+        <div class="input-group">
+          <span class="input-group-addon" id="basic-addon1">ehrId</span>
+          <input type="text" id="input-ehr-id" class="form-control" placeholder="81c75f44-d564-4262-b8d1-df13a53d5bfc" value="81c75f44-d564-4262-b8d1-df13a53d5bfc"></input>
+          <div class="input-group-btn">
+            <button type="button" id="btn-select-user" class="btn btn-primary">Prikaži podatke</button>
           </div>
         </div>
       </div>

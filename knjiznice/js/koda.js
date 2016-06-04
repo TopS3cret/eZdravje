@@ -207,9 +207,10 @@ function generirajNove(){
         var up = uporabniki[i-1];
         generirajPodatke(i, function(ehrId){
             opt.value= ehrId;
-            opt.innerHTML = up.ime + " " + up.priimek + " ("+ehrId+")";
+            opt.innerHTML = up.ime + " " + up.priimek;
     
             dropDown.appendChild(opt);
+            $("#input-ehr-id").val(dropDown.value);
             callback();
         });
         
@@ -569,7 +570,7 @@ function loadGallery(itm){
 }
 
 function izberiUporabnika(){
-    var ehrId = $("#uporabniki-dropdown").val();
+    var ehrId = $("#input-ehr-id").val();
     uporabnik.ehrId = ehrId;
     preberiOsvnovnePodatkeUporabnika(ehrId, function(){
         preberiVisineInTezeUporabnika(ehrId);
@@ -637,6 +638,7 @@ $(document).ready(function(){
        e.preventDefault();
       $("#itm-info").slideToggle(300); 
    });
+   $("#uporabniki-dropdown").change(function(){ $("#input-ehr-id").val( $(this).val() ) });
    
    itmMeter = gauge('#itm-meter', {
 		size: 220,
