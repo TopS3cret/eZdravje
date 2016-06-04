@@ -5,6 +5,12 @@ var queryUrl = baseUrl + '/query';
 var username = "ois.seminar";
 var password = "ois4fri";
 
+var flickrAPIKey = "2505c8adcbd2b8253354a5ed118e0009";
+
+var itmMeter;
+var graphTooltip;
+
+var uporabnik={};
 
 var uporabniki =  [
     {
@@ -221,9 +227,19 @@ function preberiOsvnovnePodatkeUporabnika(ehrId) {
 		headers: {"Ehr-Session": sessionId},
     	success: function (data) {
 			var party = data.party;
+			uporabnik.ime = party.firstNames;
+			uporabnik.priimek = party.lastNames;
+			uporabnik.datumRojstva = new Date(party.dateOfBirth);
+			uporabnik.spol = party.gender=="MALE"?"m":"f";
+			
 			$("#uporabnik-ime").text(party.firstNames + " " + party.lastNames);
 			$("#uporabnik-starost").text(izracunajStarost(party.dateOfBirth) + " let");
+			$("#uporabnik-datum-rojstva").text(d3.time.format("(%x)")(new Date(party.dateOfBirth)));
 			$("#uporabnik-spol").text(party.gender=="MALE"?"M":"Ž");
+			if(party.gender=="MALE")
+			    $("#uporabnik-spol").removeClass("spol-f").addClass("spol-m");
+			else
+			    $("#uporabnik-spol").removeClass("spol-m").addClass("spol-f");
 			// console.log(party);
 		},
 		error: function(err) {
@@ -261,20 +277,16 @@ function preberiVisineInTezeUporabnika(ehrId){
 	).done(function(a,b){
 	    var visine = a[0];
 	    var teze = b[0];
+	    
 	    var meritve = zdruziVisineInTeze(visine, teze);
 	    
 	    var visinaGraphData = {
           "xScale": "time",
           "yScale": "linear",
           "type": "line-dotted",
-          "tickHintX": 5,
-          "tickFormatX":function(e){
-            var d = new Date(e);
-            return d.getFullYear()+ "-" +d.getMonth()+"-"+d.getDate();
-          },
           "main": [
             {
-              "className": ".pizza",
+              "className": ".graf-data-primary",
               "data": [
 
               ]
@@ -286,14 +298,9 @@ function preberiVisineInTezeUporabnika(ehrId){
           "xScale": "time",
           "yScale": "linear",
           "type": "line-dotted",
-          "tickHintX": 5,
-          "tickFormatX":function(e){
-            var d = new Date(e);
-            return d.getFullYear()+ "-" +d.getMonth()+"-"+d.getDate();
-          },
           "main": [
             {
-              "className": ".pizza",
+              "className": ".graf-data-primary",
               "data": [
 
               ]
@@ -306,16 +313,16 @@ function preberiVisineInTezeUporabnika(ehrId){
 	    for(var i=0; i<meritve.length; i++){
             var m = meritve[i];
             
-            var visinaPoint = {x:new Date(meritve[i].datum), y:meritve[i].visina.height};
+            var visinaPoint = {x:meritve[i].datum, y:meritve[i].visina.height};
             visinaGraphData.main[0].data.push(visinaPoint);
             
-            var tezaPoint = {x:new Date(meritve[i].datum), y:meritve[i].teza.weight};
+            var tezaPoint = {x:meritve[i].datum, y:meritve[i].teza.weight};
             tezaGraphData.main[0].data.push(tezaPoint);
             
             var trElm = document.createElement('tr');
     
             var datumTd = document.createElement('td');
-            var datumText = document.createTextNode(m.datum);
+            var datumText = document.createTextNode(d3.time.format("%e.%-m.%Y %H:%M")(new Date(m.datum)));
             datumTd.appendChild(datumText);
     
             var visinaTd = document.createElement('td');
@@ -333,18 +340,37 @@ function preberiVisineInTezeUporabnika(ehrId){
             tabela.appendChild(trElm);
 	    }
 	    
-	    var visinaGraph = new xChart('line', visinaGraphData, '#visina-graf');
-	    var tezaGraph = new xChart('line', tezaGraphData, '#teza-graf');
+	    var visinaGraph = new xChart('line', visinaGraphData, '#visina-graf', getGraphOptions("cm"));
+	    var tezaGraph = new xChart('line', tezaGraphData, '#teza-graf', getGraphOptions("kg"));
 	    
 	    // ITM meter
 	    for(var i=0; i<meritve.length; i++){
 	        var m = meritve[i];
 	        if(m.visina != undefined && m.teza != undefined){
-    	        itmMeter.update(m.teza.weight/((m.visina.height/100)*(m.visina.height/100)));
+	            var itm = m.teza.weight/((m.visina.height/100)*(m.visina.height/100));
+    	        itmMeter.update(itm);
+    	        loadGallery(itm);
     	        break;
 	        }
 	    }
 	});
+}
+
+function getGraphOptions(enota){
+    return {
+            "dataFormatX": function (x) { return new Date(x) },
+            "tickFormatX": function (x) { return d3.time.format('%e.%-m.%Y')(x); },
+            "tickFormatY": function (x) { return x + " " + enota; },
+            "mouseover": function (d, i) {
+                $(this).tooltip({
+                       container: 'body',
+                       title: "<div>" + d3.time.format('%e.%-m.%Y %H:%M')(d.x) + "</div>" +
+                                "<div><strong>" + d.y + " " + enota + "</strong></div>",
+                       placement: 'top',
+                       html: true
+                     }).tooltip('show');
+              }
+	    };
 }
 
 function zdruziVisineInTeze(visine, teze){
@@ -375,25 +401,121 @@ function zdruziVisineInTeze(visine, teze){
     return arr_meritve;
 }
 
-// TODO: Če bo čas
-function datumToString(date){
-    return date.getDate() + "." +date.getMonth() + "." + date.getFullYear() + " " + date.getHours() + ":" + date.getMinutes();
+function loadGallery(itm){
+    var query = "";
+    if(itm>25)
+        query = "diet food plate";
+    else if(itm>18)
+        query = "meal food"
+    else
+        query = "junk fat food";
+    $.ajax("https://api.flickr.com/services/rest/", {
+	    data:{
+	        method:"flickr.photos.search",
+	        api_key: flickrAPIKey,
+	        text:query,
+	        format:"json",
+	        nojsoncallback:"1",
+	        sort: "relevance"
+	    },
+	    success: function(e){
+	        var photos = e.photos.photo;
+	        var gallery = document.getElementById("food-gallery");
+	        gallery.innerHTML = "";
+	        shuffle(photos);
+	        for(var i=0; i<8; i++){
+	            var photo = photos[i];
+	            var src = "https://farm"+ photo.farm +".staticflickr.com/"+ photo.server +"/"+photo.id+"_"+photo.secret+"_q.jpg";
+	            
+	            var div = document.createElement("div");
+	            $(div).addClass("col-md-3");
+	            
+	            var img = document.createElement("img");
+	            $(img).addClass("img-responsive");
+	            img.setAttribute("src", src);
+	            
+	            div.appendChild(img);
+	            gallery.appendChild(div);
+	        } 
+	    },
+	    error: function(e){
+	        console.log(e);
+	    }
+	});
 }
 
 function izberiUporabnika(){
     var ehrId = $("#uporabniki-dropdown").val();
+    uporabnik.ehrId = ehrId;
     preberiOsvnovnePodatkeUporabnika(ehrId);
     preberiVisineInTezeUporabnika(ehrId);
+}
+
+function dodajMeritev(){
+    var visina = $("#form-meritev-visina").val();
+    var teza = $("#form-meritev-teza").val();
+    var datum = $("#form-meritev-datum").val();
+    
+    var valid = ($.isNumeric(visina) && $.isNumeric(teza) && !isNaN(new Date(datum).getTime()));
+    var userActive = uporabnik.ehrId!=undefined;
+    
+    if(valid && userActive){
+        visina = parseInt(visina);
+        teza = parseInt(teza);
+        datum = new Date(datum);
+        
+        
+        var podatki = {
+    	    "ctx/language": "en",
+    	    "ctx/territory": "SI",
+    	    "ctx/time": datum,
+    	    "vital_signs/height_length/any_event/body_height_length": visina,
+    	    "vital_signs/body_weight/any_event/body_weight": teza
+    	};
+    	var parametriZahteve = {
+    	    ehrId: uporabnik.ehrId,
+    	    templateId: 'Vital Signs',
+    	    format: 'FLAT'
+    	};
+    	
+    	var sessionId = getSessionId();
+
+    	$.ajax({
+    	    url: baseUrl + "/composition?" + $.param(parametriZahteve),
+    	    headers: {"Ehr-Session": sessionId},
+    	    type: 'POST',
+    	    contentType: 'application/json',
+    	    data: JSON.stringify(podatki),
+    	    success: function (party) {
+                // TODO: Log success
+                // console.log(party);
+                preberiVisineInTezeUporabnika(uporabnik.ehrId);
+            },
+            error: function(err) {
+                // TODO: Log error
+            	console.log(err);
+            }
+    	});
+        
+    }
+    else{
+        // TODO: Error
+    }
 }
 
 $(document).ready(function(){
    $(".generate-data").click(generirajNove); 
    $("#btn-select-user").click(izberiUporabnika);
+   $("#form-meritev-submit").click(dodajMeritev);
+   $("#btn-itm-more").click(function(e){
+       e.preventDefault();
+      $("#itm-info").slideToggle(300); 
+   });
    
    itmMeter = gauge('#itm-meter', {
-		size: 250,
-		clipWidth: 250,
-		clipHeight: 160,
+		size: 220,
+		clipWidth: 220,
+		clipHeight: 120,
 		ringWidth: 60,
 		maxValue: 40,
 		transitionMs: 4000,
@@ -406,4 +528,21 @@ $(document).ready(function(){
 		majorTicks: 7
 	});
 	itmMeter.render();
+	
+    $("#graph-tabs a").click(function(){
+        console.log("FIRED");
+        window.dispatchEvent(new Event('resize'));
+    })
 });
+
+// HELPERS
+
+function shuffle(a) {
+    var j, x, i;
+    for (i = a.length; i; i -= 1) {
+        j = Math.floor(Math.random() * i);
+        x = a[i - 1];
+        a[i - 1] = a[j];
+        a[j] = x;
+    }
+}

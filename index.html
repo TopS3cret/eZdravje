@@ -66,22 +66,52 @@
           <div class="col-md-4">
             <img src="images/profile.png" alt="Profilna slika" class="img-circle img-responsive" style="height:140px">
           </div>
-          <div class="col-md-8">
-            <h2><span id="uporabnik-ime">Ime Priimek</span></h2>
-            <h3><span id="uporabnik-starost">15 let</span> <span id="uporabnik-spol" class="text-muted">Ž</span></h3>
+          <div class="col-md-8" style="margin-top:10px">
+            <h2><span id="uporabnik-ime">Ime Priimek</span><span id="uporabnik-spol" class="spol-m">M</span></h2>
+            <h3><span id="uporabnik-starost">15 let</span> <small id="uporabnik-datum-rojstva" class="text-muted">18.6.1995</small></h3>
           </div>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card first-row clearfix">
+        <div style="padding-top:0px; padding-bottom:0px; text-align:center" class="card first-row clearfix">
+          <h3 style="margin-top: 8px">Indeks telesne mase</h3>
           <div id="itm-meter"></div>
+          <a id="btn-itm-more" class="btn-thin" href="#">Več o tem</a>
         </div>
       </div>
     </div>
-    
+  </div>
+  <div id="itm-info" style="display:none">
+    <div class="container">
+      <h3>ITM</h3>
+      <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit,
+      sed diam nonummy nibh euismod tincidunt ut laoreet dolore
+      magna aliquam erat volutpat. Ut wisi enim ad minim veniam,
+      quis nostrud exerci tation ullamcorper suscipit lobortis nisl
+      ut aliquip ex ea commodo consequat. Duis autem vel eum iriure
+      dolor in hendrerit in vulputate velit esse molestie consequat,
+      vel illum dolore eu feugiat nulla facilisis at vero eros et
+      accumsan et iusto odio dignissim qui blandit praesent luptatum
+      zzril delenit augue duis dolore te feugait nulla facilisi.
+      Nam liber tempor cum soluta nobis eleifend option congue
+      nihil imperdiet doming id quod mazim placerat facer possim
+      assum. Typi non habent claritatem insitam; est usus legentis
+      in iis qui facit eorum claritatem. Investigationes
+      demonstraverunt lectores legere me lius quod ii legunt saepius.
+      Claritas est etiam processus dynamicus, qui sequitur mutationem
+      consuetudium lectorum. Mirum est notare quam littera gothica,
+      quam nunc putamus parum claram, anteposuerit litterarum formas
+      humanitatis per seacula quarta decima et quinta decima. Eodem
+      modo typi, qui nunc nobis videntur parum clari, fiant sollemnes
+      in futurum.</p>
+    </div>
+  </div>
+  <div class="container">
     <div class="row">
       <div class="col-md-8">
         <div class="card clearfix">
+          <h2>Zadnje meritve</h2>
+          <p>Tabela prikazuje zadnjih nekaj meritev. Najnovejše meritve so pri vrhu.</p>
           <div>
             <table class="table">
               <thead>
@@ -100,27 +130,64 @@
               </tbody>
             </table>
           </div>
+          <h3>Pregled meritev</h3>
           <div>
-            <ul class="nav nav-tabs">
+            <ul class="nav nav-tabs" id="graph-tabs">
               <li class="active"><a data-toggle="tab" href="#tab-visina">Višina</a></li>
               <li><a data-toggle="tab" href="#tab-teza">Teža</a></li>
-              <li><a data-toggle="tab" href="#tab-visina-teza">Razmerje višina/teža</a></li>
             </ul>
             <div class="tab-content">
               <div id="tab-visina" class="tab-pane fade in active"><figure style="width: 100%; height: 300px;" id="visina-graf"></figure></div>
               <div id="tab-teza" class="tab-pane fade"><figure style="width: 100%; height: 300px;" id="teza-graf"></figure></div>
-              <div id="tab-visina-teza" class="tab-pane fade"><figure style="width: 100%; height: 300px;" id="visina-teza-graf"></figure></div>
             </div>
           </div>
         </div>
       </div>
       <div class="col-md-4">
         <div class="card clearfix">
-          <p>Začasni content</p>
+          <h3>Dodaj meritev</h3>
+          <p>Izmerite višino in težo, ter jo vnesite skupaj z datumom merjenja</p>
+          <div class="form-group">
+            <label for="form-meritev-visina">Višina</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="form-meritev-visina" placeholder="Višina">
+              <div class="input-group-addon">cm</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="form-meritev-teza">Teža</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="form-meritev-teza" placeholder="Teža">
+              <div class="input-group-addon">kg</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="form-meritev-datum">Datum meritve</label>
+            <input type="text" class="form-control" id="form-meritev-datum" placeholder="2015-08-24 13:00:00">
+          </div>
+          <button type="submit" id="form-meritev-submit" class="btn btn-primary">Shrani</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="col-md-8">
+        <div class="card clearfix">
+          <h2>Predlogi za hrano</h2>
+          <div id="food-gallery">
+            <div class="col-md-3"><img src="https://farm8.staticflickr.com/7516/27221824411_0d4f4236d5_q.jpg" class="img-responsive" alt="Responsive image"></div>
+            <div class="col-md-3"><img src="https://farm8.staticflickr.com/7516/27221824411_0d4f4236d5_q.jpg" class="img-responsive" alt="Responsive image"></div>
+            <div class="col-md-3"><img src="https://farm8.staticflickr.com/7516/27221824411_0d4f4236d5_q.jpg" class="img-responsive" alt="Responsive image"></div>
+            <div class="col-md-3"><img src="https://farm8.staticflickr.com/7516/27221824411_0d4f4236d5_q.jpg" class="img-responsive" alt="Responsive image"></div>
+            <div class="col-md-3"><img src="https://farm8.staticflickr.com/7516/27221824411_0d4f4236d5_q.jpg" class="img-responsive" alt="Responsive image"></div>
+            <div class="col-md-3"><img src="https://farm8.staticflickr.com/7516/27221824411_0d4f4236d5_q.jpg" class="img-responsive" alt="Responsive image"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  
+  
   <!-- KONEC: Vsebina aplikacije -->
 
 </body>
