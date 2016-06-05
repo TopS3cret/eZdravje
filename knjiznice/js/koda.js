@@ -16,80 +16,134 @@ var tezaGraphData;
 
 var uporabniki =  [
     {
-        ime: "Matej",
-        priimek: "Žalec",
+        ime: "Zdravko",
+        priimek: "Koren",
         datumRojstva: new Date("2003-04-17"),
         spol: "MALE",
         meritve: [
             {
-                izvajalec: "Matej Žalec",
+                izvajalec: "Oče Koren",
                 datum: new Date("2015-06-10 16:00:00"),
                 visina: 152,
-                teza: 60.4
+                teza: 43.2
             },
             {
-                izvajalec: "Matej Žalec",
+                izvajalec: "Oče Koren",
+                datum: new Date("2015-09-01 13:00:00"),
+                visina: 154,
+                teza: 44
+            },
+            {
+                izvajalec: "Oče Koren",
+                datum: new Date("2015-11-22 19:00:00"),
+                visina: 156.5,
+                teza: 45.2
+            },
+            {
+                izvajalec: "Oče Koren",
+                datum: new Date("2016-02-11 12:00:00"),
+                visina: 158,
+                teza: 46
+            },
+            {
+                izvajalec: "Oče Koren",
                 datum: new Date("2016-04-14 16:00:00"),
-                visina: 161.8,
-                teza: 68.3
+                visina: 159.5,
+                teza: 47
             },
             {
-                izvajalec: "Matej Žalec",
+                izvajalec: "Oče Koren",
                 datum: new Date("2016-05-26 16:00:00"),
                 visina: 162,
-                teza: 69.1
+                teza: 50
             }
         ]
     },
     {
-        ime: "Job",
-        priimek: "Rožanec",
+        ime: "Primož",
+        priimek: "Prekla",
         datumRojstva: new Date("2009-07-23"),
         spol: "MALE",
         meritve: [
             {
-                izvajalec: "Tina Rožanec",
+                izvajalec: "Matej Prekla",
                 datum: new Date("2015-06-10 16:00:00"),
-                visina: 120,
-                teza: 38,
+                visina: 130,
+                teza: 20
             },
             {
-                izvajalec: "Tilen Rožanec",
+                izvajalec: "Matej Prekla",
+                datum: new Date("2015-09-01 13:00:00"),
+                visina: 132,
+                teza: 20.3
+            },
+            {
+                izvajalec: "Matej Prekla",
+                datum: new Date("2015-11-22 19:00:00"),
+                visina: 134,
+                teza: 21
+            },
+            {
+                izvajalec: "Matej Prekla",
+                datum: new Date("2016-02-11 12:00:00"),
+                visina: 136,
+                teza: 21.2
+            },
+            {
+                izvajalec: "Matej Prekla",
                 datum: new Date("2016-04-14 16:00:00"),
-                visina: 145,
-                teza: 44
+                visina: 138,
+                teza: 22
             },
             {
-                izvajalec: "Tilen Rožanec",
+                izvajalec: "Matej Prekla",
                 datum: new Date("2016-05-26 16:00:00"),
-                visina: 146,
-                teza: 45
+                visina: 139,
+                teza: 22
             }
         ]
     },
     {
-        ime: "Lori",
-        priimek: "Bregar",
+        ime: "Marjanca",
+        priimek: "Bogataj",
         datumRojstva: new Date("2007-09-13"),
         spol: "FEMALE",
         meritve: [
             {
-                izvajalec: "Tonja Bregar",
+                izvajalec: "Bogatajeva Micka",
                 datum: new Date("2015-06-10 16:00:00"),
-                visina: 145,
-                teza: 60.4
+                visina: 120,
+                teza: 32
             },
             {
-                izvajalec: "Hinko Bregar",
+                izvajalec: "Bogatajeva Micka",
+                datum: new Date("2015-09-01 13:00:00"),
+                visina: 121,
+                teza: 34
+            },
+            {
+                izvajalec: "Bogatajeva Micka",
+                datum: new Date("2015-11-22 19:00:00"),
+                visina: 122,
+                teza: 36
+            },
+            {
+                izvajalec: "Bogatajeva Micka",
+                datum: new Date("2016-02-11 12:00:00"),
+                visina: 123,
+                teza: 38
+            },
+            {
+                izvajalec: "Bogatajeva Micka",
                 datum: new Date("2016-04-14 16:00:00"),
-                visina: 146,
-                teza: 68.3
+                visina: 124,
+                teza: 41
             },
             {
-                izvajalec: "Tonja Bregar",
+                izvajalec: "Bogatajeva Micka",
                 datum: new Date("2016-05-26 16:00:00"),
-                visina: 146,
-                teza: 69.1
+                visina: 125,
+                teza: 43
             }
         ]
     }
@@ -151,8 +205,6 @@ function generirajPodatke(stPacienta, callback) {
                     data: JSON.stringify(partyData),
                     headers: {"Ehr-Session": sessionId},
                     success: function (party) {
-                        // TODO: Log success
-                        //console.log(party);
                         // Dodamo meritve
                     	async.eachSeries(uporabnik.meritve, function(meritev, callback){
                     	    var podatki = {
@@ -175,19 +227,15 @@ function generirajPodatke(stPacienta, callback) {
                         	    data: JSON.stringify(podatki),
                         	    headers: {"Ehr-Session": sessionId},
                         	    success: function (party) {
-                                    // TODO: Log success
-                                    // console.log(party);
                                     callback();
                                 },
                                 error: function(err) {
-                                    // TODO: Log error
                                 	console.log(err);
                                 }
                         	});
                     	});
                     },
                     error: function(err) {
-                        // TODO: Log error
                     	console.log(err);
                     }
                 });
@@ -263,7 +311,6 @@ function preberiOsnovnePodatkeUporabnika(ehrId, callback) {
     			else{
     			    toastr["warning"]("Manjka podatek o spolu otroka");
     			}
-    			// console.log(party);
     			toastr["success"]("Podatki o uporabniku uspešno prebrani.")
     			callback();
     		},
@@ -428,8 +475,6 @@ function narisiGrafe(meritve){
             tezaGraphData.comp[2].data.push(tezaMax);
             
         }
-        
-        console.log(visinaGraphData);
         visinaGraph.setData(visinaGraphData);
         tezaGraph.setData(tezaGraphData);
     });
@@ -502,7 +547,6 @@ function getGraphOptions(enota){
             "tickFormatX": function (x) { return d3.time.format('%e.%-m.%Y')(x); },
             "tickFormatY": function (x) { return x + " " + enota; },
             "mouseover": function (d, i) {
-                console.log(d);
                 var title="<div>" + d3.time.format('%e.%-m.%Y %H:%M')(d.x) + "</div>" +
                                 "<div><strong>" + d.y + " " + enota + "</strong></div>" +
                                 "<div>Odstopanje: " + parseFloat(d.diff).toFixed(2) + " "+enota+"</div>";
