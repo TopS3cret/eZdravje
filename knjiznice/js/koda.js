@@ -1,6 +1,5 @@
 
 var baseUrl = 'https://rest.ehrscape.com/rest/v1';
-var queryUrl = baseUrl + '/query';
 
 var username = "ois.seminar";
 var password = "ois4fri";
@@ -8,9 +7,12 @@ var password = "ois4fri";
 var flickrAPIKey = "2505c8adcbd2b8253354a5ed118e0009";
 
 var itmMeter;
-var graphTooltip;
 
 var uporabnik={};
+var visinaGraph;
+var tezaGraph;
+var visinaGraphData;
+var tezaGraphData;
 
 var uporabniki =  [
     {
@@ -214,13 +216,18 @@ function generirajNove(){
             callback();
         });
         
+    }, function(error, success){
+        if(error)
+            toastr["error"]("Napaka pri generiranju podatkov.");
+        else
+            toastr["success"]("Uporabniki so bili uspešno generirani.");
     });
 
         
 }
 
 
-function preberiOsvnovnePodatkeUporabnika(ehrId, callback) {
+function preberiOsnovnePodatkeUporabnika(ehrId, callback) {
 	
 	
 	getSessionId(function(sessionId){
@@ -236,19 +243,32 @@ function preberiOsvnovnePodatkeUporabnika(ehrId, callback) {
     			uporabnik.spol = party.gender=="MALE"?"m":"f";
     			
     			$("#uporabnik-ime").text(party.firstNames + " " + party.lastNames);
-    			$("#uporabnik-starost").text(izracunajStarost(party.dateOfBirth) + " let");
-    			$("#uporabnik-datum-rojstva").text(d3.time.format("(%x)")(new Date(party.dateOfBirth)));
-    			$("#uporabnik-spol").text(party.gender=="MALE"?"M":"Ž");
-    			if(party.gender=="MALE")
-    			    $("#uporabnik-spol").removeClass("spol-f").addClass("spol-m");
-    			else
-    			    $("#uporabnik-spol").removeClass("spol-m").addClass("spol-f");
-    			// console.log(party);
     			
+    			if(party.dateOfBirth){
+        			$("#uporabnik-starost").text(izracunajStarost(party.dateOfBirth) + " let");
+        			$("#uporabnik-datum-rojstva").text(d3.time.format("(%x)")(new Date(party.dateOfBirth)));
+    			}
+    			else{
+    			    toastr["warning"]("Manjka podatek o datumu rojstva otroka.");
+    			}
+    			
+    			if(party.gender){
+        			$("#uporabnik-spol").text(party.gender=="MALE"?"M":"Ž");
+    
+        			if(party.gender=="MALE")
+        			    $("#uporabnik-spol").removeClass("spol-f").addClass("spol-m");
+        			else
+        			    $("#uporabnik-spol").removeClass("spol-m").addClass("spol-f");
+    			}
+    			else{
+    			    toastr["warning"]("Manjka podatek o spolu otroka");
+    			}
+    			// console.log(party);
+    			toastr["success"]("Podatki o uporabniku uspešno prebrani.")
     			callback();
     		},
     		error: function(err) {
-    			// TODO: Izpis napake
+    			toastr["error"]("Napaka pri branju podatkov o uporabniku");
     		}
     	});
 	});
@@ -296,7 +316,7 @@ function preberiVisineInTezeUporabnika(ehrId){
     	        if(m.visina != undefined && m.teza != undefined){
     	            var itm = m.teza.weight/((m.visina.height/100)*(m.visina.height/100));
         	        itmMeter.update(itm);
-        	        loadGallery(itm);
+        	        naloziGalerijo(itm);
         	        break;
     	        }
     	    }
@@ -306,7 +326,7 @@ function preberiVisineInTezeUporabnika(ehrId){
 }
 
 function napolniTabelo(meritve){
-    var tabela = document.getElementById("meritve-tabela");
+    var tabela = document.getElementById("meritve-tabela-body");
     tabela.innerHTML = "";
     for(var i=0; i<meritve.length; i++){
         var m = meritve[i];
@@ -334,86 +354,90 @@ function napolniTabelo(meritve){
 }
 
 function narisiGrafe(meritve){
-    
-    var visinaGraphData = {
-      "xScale": "time",
-      "yScale": "linear",
-      "type": "line-dotted",
-      "main": [
-        {
-          "className": ".graf-data-primary",
-          "data": [
-    
-          ]
-        }
-      ],
-      "comp": [
-          {
-              "className": ".graph-median",
-              "type": "line",
-              "data" : [
-            
-                ]
-          }
-        ]
-    }
-    
-    var tezaGraphData = {
-      "xScale": "time",
-      "yScale": "linear",
-      "type": "line-dotted",
-      "main": [
-        {
-          "className": ".graf-data-primary",
-          "data": [
-    
-          ]
-        }
-      ],
-      "comp": [
-          {
-              "className": ".graph-median",
-              "type": "line",
-              "data" : [
-            
-                ]
-          }
-        ]
-    }
-    
+    visinaGraphData.main[0].data = [];
+    visinaGraphData.comp[0].data = [];
+    visinaGraphData.comp[1].data = [];
+    visinaGraphData.comp[2].data = [];
+    tezaGraphData.main[0].data = [];
+    tezaGraphData.comp[0].data = [];
+    tezaGraphData.comp[1].data = [];
+    tezaGraphData.comp[2].data = [];
     pridobiPodatkePovprecja(meritve, function(stat){
         for(var i=0; i<meritve.length; i++){
             var m = meritve[i];
             
             var visinaPoint = {x:m.datum, y:m.visina.height};
+            var minDist=10000000000;
+            var minJ=-1;
+            for(var j=stat.visina.length-1; j>=0; j--){
+                var s = stat.visina[j];
+                var dMeritve = new Date(m.datum);
+                var dPovp = new Date(uporabnik.datumRojstva.getTime() + s.ageMonths*30*24*60*60*1000);
+                var dist = Math.abs(dMeritve.getTime()-dPovp.getTime());
+                if(dist<minDist){
+                    minDist=dist;
+                    minJ=j;
+                }
+            }
+            var s = stat.visina[minJ];
+            visinaPoint.diff=visinaPoint.y - s.M;
+            visinaPoint.danger = Math.abs(visinaPoint.diff)>s.M*s.S;
             visinaGraphData.main[0].data.push(visinaPoint);
             
-            var tezaPoint = {x:m.datum, y:m.teza.weight};
+            var tezaPoint = {x:m.datum, y:m.teza.weight, test:"test"+i};
+            minDist=10000000000;
+            minJ=-1;
+            for(var j=stat.visina.length-1; j>=0; j--){
+                var s = stat.teza[j];
+                var dMeritve = new Date(m.datum);
+                var dPovp = new Date(uporabnik.datumRojstva.getTime() + s.ageMonths*30*24*60*60*1000);
+                var dist = Math.abs(dMeritve.getTime()-dPovp.getTime());
+                if(dist<minDist){
+                    minDist=dist;
+                    minJ=j;
+                }
+            }
+            var s = stat.teza[minJ];
+            tezaPoint.diff=tezaPoint.y - s.M;
+            tezaPoint.danger = Math.abs(tezaPoint.diff)>s.M*s.S;
             tezaGraphData.main[0].data.push(tezaPoint);
         }
         for(var i=0; i<stat.visina.length; i++){
             var s = stat.visina[i];
             
-            var datum = uporabnik.datumRojstva.getTime() + s.ageMonths*30*24*60*60*1000;
-            var visinaPoint = {x:new Date(datum), y:s.M};
+            var datum = new Date(uporabnik.datumRojstva.getTime() + s.ageMonths*30*24*60*60*1000);
+            var visinaPoint = {x:datum, y:s.M};
+            var diff = s.M*s.S;
+            var visinaMin = {x:datum, y:s.M-diff};
+            var visinMax = {x:datum, y:s.M+diff};
             visinaGraphData.comp[0].data.push(visinaPoint);
+            visinaGraphData.comp[1].data.push(visinaMin);
+            visinaGraphData.comp[2].data.push(visinMax);
         }
         
         for(var i=0; i<stat.teza.length; i++){
             var s = stat.teza[i];
             
-            var datum = uporabnik.datumRojstva.getTime() + s.ageMonths*30*24*60*60*1000;
-            var tezaPoint = {x:new Date(datum), y:s.M};
+            var datum = new Date(uporabnik.datumRojstva.getTime() + s.ageMonths*30*24*60*60*1000);
+            var tezaPoint = {x:datum, y:s.M};
+            var diff = s.M*s.S;
+            var tezaMin = {x:datum, y:s.M-diff};
+            var tezaMax = {x:datum, y:s.M+diff};
             tezaGraphData.comp[0].data.push(tezaPoint);
+            tezaGraphData.comp[1].data.push(tezaMin);
+            tezaGraphData.comp[2].data.push(tezaMax);
+            
         }
         
-        var visinaGraph = new xChart('line', visinaGraphData, '#visina-graf', getGraphOptions("cm"));
-        var tezaGraph = new xChart('line', tezaGraphData, '#teza-graf', getGraphOptions("kg"));
+        console.log(visinaGraphData);
+        visinaGraph.setData(visinaGraphData);
+        tezaGraph.setData(tezaGraphData);
     });
     	    
     
 }
 
+// Pridobi podatke iz datotek s povprečnimi višinami in težami, ter vrne tisto časovno območje, ki ustreza podanim meritvam
 function pridobiPodatkePovprecja(meritve, callback){
     
     $.when($.ajax("data/wtage.json"), $.ajax("data/statage.json")).done(function(a,b){
@@ -478,15 +502,84 @@ function getGraphOptions(enota){
             "tickFormatX": function (x) { return d3.time.format('%e.%-m.%Y')(x); },
             "tickFormatY": function (x) { return x + " " + enota; },
             "mouseover": function (d, i) {
+                console.log(d);
+                var title="<div>" + d3.time.format('%e.%-m.%Y %H:%M')(d.x) + "</div>" +
+                                "<div><strong>" + d.y + " " + enota + "</strong></div>" +
+                                "<div>Odstopanje: " + parseFloat(d.diff).toFixed(2) + " "+enota+"</div>";
+                if(d.danger)
+                    title+= '<div><strong class="text-danger">Nevarno območje</strong></div>';
+                else
+                    title+= '<div><strong class="text-success">Vse je v redu</strong></div>';
                 $(this).tooltip({
                        container: 'body',
-                       title: "<div>" + d3.time.format('%e.%-m.%Y %H:%M')(d.x) + "</div>" +
-                                "<div><strong>" + d.y + " " + enota + "</strong></div>",
                        placement: 'top',
                        html: true
-                     }).tooltip('show');
+                     }).attr('title', title).tooltip('fixTitle').tooltip('show');
               }
 	    };
+}
+
+function initGraphs(){
+    visinaGraphData = {
+      "xScale": "time",
+      "yScale": "linear",
+      "type": "line-dotted",
+      "main": [
+        {
+          "className": ".graf-data-primary",
+          "data": []
+        }
+      ],
+      "comp": [
+          {
+              "className": ".graph-median",
+              "type": "line",
+              "data" : []
+          },
+          {
+              "className": ".graph-limit",
+              "type": "line",
+              "data" : []
+          },
+          {
+              "className": ".graph-limit2",
+              "type": "line",
+              "data" : []
+          }
+        ]
+    }
+    
+    tezaGraphData = {
+      "xScale": "time",
+      "yScale": "linear",
+      "type": "line-dotted",
+      "main": [
+        {
+          "className": ".graf-data-primary",
+          "data": []
+        }
+      ],
+      "comp": [
+          {
+              "className": ".graph-median",
+              "type": "line",
+              "data" : []
+          },
+          {
+              "className": ".graph-limit",
+              "type": "line",
+              "data" : []
+          },
+          {
+              "className": ".graph-limit2",
+              "type": "line",
+              "data" : []
+          }
+        ]
+    }
+    
+    visinaGraph = new xChart('line', visinaGraphData, '#visina-graf', getGraphOptions("cm"));
+    tezaGraph = new xChart('line', tezaGraphData, '#teza-graf', getGraphOptions("kg"));
 }
 
 function zdruziVisineInTeze(visine, teze){
@@ -517,7 +610,7 @@ function zdruziVisineInTeze(visine, teze){
     return arr_meritve;
 }
 
-function loadGallery(itm){
+function naloziGalerijo(itm){
     var query = "";
     if(itm>25)
         query = "diet food plate";
@@ -544,7 +637,7 @@ function loadGallery(itm){
 	            var src = "https://farm"+ photo.farm +".staticflickr.com/"+ photo.server +"/"+photo.id+"_"+photo.secret+"_q.jpg";
 	            
 	            var div = document.createElement("div");
-	            $(div).addClass("col-md-3");
+	            $(div).addClass("col-sm-3 col-xs-6");
 	            
 	            
 	            var a = document.createElement("a");
@@ -564,7 +657,7 @@ function loadGallery(itm){
 	        $(".fancybox").fancybox();
 	    },
 	    error: function(e){
-	        console.log(e);
+	        toastr["error"]("Napaka pri nalagnju slik.");
 	    }
 	});
 }
@@ -572,7 +665,7 @@ function loadGallery(itm){
 function izberiUporabnika(){
     var ehrId = $("#input-ehr-id").val();
     uporabnik.ehrId = ehrId;
-    preberiOsvnovnePodatkeUporabnika(ehrId, function(){
+    preberiOsnovnePodatkeUporabnika(ehrId, function(){
         preberiVisineInTezeUporabnika(ehrId);
     });
     
@@ -586,7 +679,13 @@ function dodajMeritev(){
     var valid = ($.isNumeric(visina) && $.isNumeric(teza) && !isNaN(new Date(datum).getTime()));
     var userActive = uporabnik.ehrId!=undefined;
     
-    if(valid && userActive){
+    if(!valid){
+        toastr["error"]("Napaka v podatkih");
+    }
+    else if(!userActive){
+        toastr["error"]("Izbran ni noben uporabnik");
+    }
+    else{
         visina = parseInt(visina);
         teza = parseInt(teza);
         datum = new Date(datum);
@@ -613,33 +712,49 @@ function dodajMeritev(){
         	    contentType: 'application/json',
         	    data: JSON.stringify(podatki),
         	    success: function (party) {
-                    // TODO: Log success
-                    // console.log(party);
+                    toastr["success"]("Meritev je bila uspoešno vnešena.");
                     preberiVisineInTezeUporabnika(uporabnik.ehrId);
                 },
                 error: function(err) {
-                    // TODO: Log error
-                	console.log(err);
+                    toastr["error"]("Napaka pri vnosu meritev");
                 }
         	});
     	});
         
     }
-    else{
-        // TODO: Error
-    }
+}
+
+function uporabnikiDropdownChanged(){
+    $("#input-ehr-id").val( $(this).val() );
 }
 
 $(document).ready(function(){
    $(".generate-data").click(generirajNove); 
    $("#btn-select-user").click(izberiUporabnika);
    $("#form-meritev-submit").click(dodajMeritev);
-   $("#btn-itm-more").click(function(e){
-       e.preventDefault();
-      $("#itm-info").slideToggle(300); 
-   });
-   $("#uporabniki-dropdown").change(function(){ $("#input-ehr-id").val( $(this).val() ) });
-   
+   $("#uporabniki-dropdown").change(uporabnikiDropdownChanged);
+   $("#graph-tabs a").click(function(){
+        window.dispatchEvent(new Event('resize'));
+    });
+    
+    toastr.options = {
+      "closeButton": false,
+      "debug": false,
+      "newestOnTop": false,
+      "progressBar": false,
+      "positionClass": "toast-bottom-left",
+      "preventDuplicates": false,
+      "onclick": null,
+      "showDuration": "300",
+      "hideDuration": "1000",
+      "timeOut": "5000",
+      "extendedTimeOut": "1000",
+      "showEasing": "swing",
+      "hideEasing": "linear",
+      "showMethod": "fadeIn",
+      "hideMethod": "fadeOut"
+    }
+    
    itmMeter = gauge('#itm-meter', {
 		size: 220,
 		clipWidth: 220,
@@ -657,10 +772,7 @@ $(document).ready(function(){
 	});
 	itmMeter.render();
 	
-    $("#graph-tabs a").click(function(){
-        console.log("FIRED");
-        window.dispatchEvent(new Event('resize'));
-    })
+    initGraphs();
 });
 
 // HELPERS

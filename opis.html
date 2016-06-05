@@ -14,7 +14,7 @@
 <body>
 
   <!-- ZAČETEK: Menujska vrstica na vrhu spletne strani -->
-  <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+  <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
     <div class="container">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#menujska-vrstica">
@@ -22,7 +22,7 @@
           <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
         </button>
         <!-- ZAČETEK: Ime vaše aplikacije -->
-        <a class="navbar-brand" href="index.html">KoBomVelik</a>
+        <a class="navbar-brand" href="index.html">Žganci</a>
         <!-- KONEC: Ime vaše aplikacije -->
       </div>
       <div class="collapse navbar-collapse" id="menujska-vrstica">
@@ -45,7 +45,8 @@
           </div>
           <div class="panel-body">
             <!-- ZAČETEK: Opis ideje, ki jo aplikacija podpira -->
-            <p><strong>TO-DO</strong>: Na tem mestu je potrebno dodati <strong>osnovni opis ideje rešitve</strong> (kakšen je osnovni SCENARIJ UPORABE, KDO je ciljna publika, za kakšen NAMEN se aplikacija uporablja).</p><p class="text-muted">Opis naj ne bo daljši od 200 besed.</p>
+            <p>Aplikacija <strong>Žganci</strong> omogoča staršem, da spremljajo razvoj svojega otroka. Starši vsake toliko časa izmerijo višino in težo svojega otroka, ter ju vnesejo v aplikacijo. Aplikacija omogoča enostaven pregled vseh preteklih meritev in grafični prikaz napredka otroka. Meritve se primerjajo tudi z zdravim povprečjem za določeno starost po podatkih organizacije CDC, da se lahko starši v primeru prevelikih odstopanj posvetujejo z zdravnikom.</p>
+            <p>Iz zadnje meritve se izračuna tudi indeks telesne mase. Na podlagi njegove vrednosti, aplikacija pojasni, kaj to pomeni, ter svetuje kako naj starši in otroci ravnajo. Prikažejo se tudi slike hrane, ki jo aplikacija priporoča za otroka. </p>
             <!-- KONEC: Opis ideje, ki jo aplikacija podpira -->
           </div>
         </div>
@@ -55,7 +56,18 @@
           </div>
           <div class="panel-body">
             <!-- ZAČETEK: Uporabljeni zunanji viri podatkov -->
-            <p><strong>TO-DO</strong>: Na tem mestu je navesti zunanji vir podatkov (URL naslov), na kakšen način ste ga uporabili (neposredni API klic, uvožena statična datoteka ipd.) in kaj je bil namen uporabe (kako se vključuje v osnovno idejo aplikacije).</p>
+            <p>Uporabil sem dva zunanja vira. V primeru da se ocenjuje samo en, mi prosim ocenjujte <strong>prvega</strong>.</p>
+
+            <h4>1. Flickr API</h4>
+            <p class="text-muted">Dostopno na <a href="https://www.flickr.com/services/api/">tej povezavi</a></p>
+            <p>Do APIja dostopam z AJAX GET requestom.</p>
+            <p>Na podlagi indeksa telesne mase izberem search query in pošljem poizvedbo na Flickr. Dobim seznam slik ki ustrezajo. Slike nato prikažem v galeriji. Slike staršem prikazujejo, kakšno vrsto hrane naj bi njihov otrok jedel.</p>
+            
+            <h4>2. Podatki o povprečnih višinah in težah otrok glede na spol in starost za otroke med 2 in 20 letom</h4>
+            <p class="text-muted">Dostopno na <a href="http://www.cdc.gov/growthcharts/percentile_data_files.htm">tej povezavi</a></p>
+            <p>Podatki so last Center for Disease Control (CDC). Ker sta datoteki v CSV obliki, ni bil možen direktni dostop, zato sem ju vključil lokalno. Pred tem sem ju še preparsal v JSON, da tega ni potrebno početi aplikaciji, vsakič ko dostopa do njiju. Do podatkov dostopam z AJAX klicem.</p>
+            <p>Podatke uporabim tako, da poleg meritev, na grafu, prikažem še pridobljene povprečne vrednosti. Tako lahko starši vidijo, kako zdrav je razvoj njihovega otroka.</p>
+            
             <!-- KONEC: Uporabljeni zunanji viri podatkov -->
           </div>
         </div>
@@ -65,7 +77,9 @@
           </div>
           <div class="panel-body">
             <!-- ZAČETEK: Master/detail načrtovalski vzorec -->
-            <p><strong>TO-DO</strong>: Na tem mestu morate navesti uporabljen master/detail načrtovalski vzorec in na kakšen način ga nameravate uporabiti.</p>
+            <h4>Prikaz podrobnosti meritev ob postavitvi miške na mertitev na grafu</h4>
+            <p>Na grafu so prikazane točke, ki označujejo višino/težo pri določenem datumu. (master) </p>
+            <p>Ko se z miško pomaknemo na točko dobimo vrsto informacij. Naprej točen datum in vrednost meritve, poleg tega pa še izračunano odstopanje od povprečja in podatek o tem, ali je odstopanje meritve razlog za skrb. (detail)</p>
             <!-- KONEC: Master/detail načrtovalski vzorec -->
           </div>
         </div>
@@ -75,7 +89,13 @@
           </div>
           <div class="panel-body">
             <!-- ZAČETEK: Uporabljeni zunanji viri podatkov -->
-            <p><strong>TO-DO</strong>: Na tem mestu je potrebno navesti uporabljeno tehniko vizualizacije podatkov (za pomoč lahko uporabite primer iz <a href="https://github.com/mbostock/d3/wiki/Gallery" target="_blank">D3.js galerije</a>) in zakaj je bila ta tehnika izbrana.</p>
+            <p>Uporabil sem dva vrsti vizualizacije podatkov. V primeru da se ocenjuje samo en, mi prosim ocenjujte <strong>prvega</strong>.</p>
+
+            <h4>1. Graf meritev višine in teže</h4>
+            <p>V grafu so prikazane meritve skozi čas. Poleg njih je na grafu narisano tudi povprečje in standardni odklon meritev po podatkih CDC. Graf je primeren zato, ker lahko zelo hitro vidimo v kakšno območje padejo meritve in če sta višina in teža otroka razlog za skrb.</p>
+            
+            <h4>2. Prikaz indeksa telesne mase (ITM)</h4>
+            <p>Na merilcu je prikazan izračunan ITM. Pasovi vrednosti so obarvani tako, da nakazujejo kako zdrav je določen ITM. Števec sem vključil zato, ker je enostaven pokazatelj stanja otroka. ITM ni najbolj zanesljiva metoda, ampak hitro pokaže če je nekaj narobe.</p>
             <!-- KONEC: Uporabljeni zunanji viri podatkov -->
           </div>
         </div>

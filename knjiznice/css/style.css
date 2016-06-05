@@ -84,3 +84,13 @@ body{
 .xchart .color0.comp .line{
     stroke: #FFDD00;
 }
+
+.xchart .color1.comp .line{
+    stroke-width: 1px;
+    stroke: #FF7F00;
+}
+
+.xchart .color2.comp .line{
+    stroke-width: 1px;
+    stroke: #FF7F00;
+}
